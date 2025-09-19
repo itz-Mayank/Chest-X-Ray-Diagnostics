@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, render_template, url_for
+from flask import Flask, request, render_template, url_for, flash, redirect # <-- ADDED flash and redirect
 from werkzeug.utils import secure_filename
 import tensorflow as tf
 from PIL import Image
@@ -9,12 +9,14 @@ import numpy as np
 app = Flask(__name__)
 
 # --- Configuration ---
+# ADDED: A secret key is required for flashing messages
+app.config['SECRET_KEY'] = 'a_super_secret_key_change_me'
 UPLOAD_FOLDER = 'static/uploads/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- TFLite Model Loading --- # <-- CHANGE: Using TFLite Interpreter
+# --- TFLite Model Loading ---
 TFLITE_MODEL_PATH = 'model.tflite'
 try:
     interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
@@ -22,9 +24,9 @@ try:
     # Get input and output tensor details
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
-    print("TFLite model loaded successfully.")
+    print("✅ TFLite model loaded successfully.")
 except Exception as e:
-    print(f"Error loading TFLite model: {e}")
+    print(f"❌ Error loading TFLite model: {e}")
     interpreter = None
 
 CLASS_LABELS = ['COVID', 'Normal', 'Viral Pneumonia']
@@ -32,12 +34,16 @@ CLASS_LABELS = ['COVID', 'Normal', 'Viral Pneumonia']
 # --- Helper Functions ---
 def preprocess_image(image_path):
     """Loads and preprocesses an image for the model."""
-    img = Image.open(image_path).convert('RGB')
-    img = img.resize((224, 224))
-    img_array = tf.keras.utils.img_to_array(img)
-    img_array_expanded = np.expand_dims(img_array, axis=0)
-    # Important: TFLite models still need the same preprocessing
-    return tf.keras.applications.resnet50.preprocess_input(img_array_expanded)
+    # MODIFIED: Added error handling for non-image files
+    try:
+        img = Image.open(image_path).convert('RGB')
+        img = img.resize((224, 224))
+        img_array = tf.keras.utils.img_to_array(img)
+        img_array_expanded = np.expand_dims(img_array, axis=0)
+        return tf.keras.applications.resnet50.preprocess_input(img_array_expanded)
+    except Exception as e:
+        print(f"Error preprocessing image: {e}")
+        return None
 
 # --- Flask Routes ---
 @app.route('/', methods=['GET'])
@@ -49,14 +55,15 @@ def index():
 def predict():
     """Handles file upload and prediction."""
     if interpreter is None:
-        return "Model not loaded. Please check server logs.", 500
+        flash("Model is not available. Please check server logs.", "error")
+        return redirect(url_for('index'))
 
-    if 'file' not in request.files:
-        return "No file part", 400
+    if 'file' not in request.files or request.files['file'].filename == '':
+        # MODIFIED: Use flash to show an error message on the main page
+        flash("No file selected. Please choose an image to upload.", "warning")
+        return redirect(url_for('index'))
     
     file = request.files['file']
-    if file.filename == '':
-        return "No selected file", 400
 
     if file:
         filename = secure_filename(file.filename)
@@ -65,13 +72,15 @@ def predict():
 
         # Preprocess and predict
         processed_img = preprocess_image(filepath)
+        
+        # MODIFIED: Check if preprocessing was successful
+        if processed_img is None:
+            flash("Invalid file format. Please upload a valid image file (JPG, PNG, etc.).", "error")
+            return redirect(url_for('index'))
 
-        # --- Prediction with TFLite Interpreter --- # <-- CHANGE: New prediction logic
-        # Set the value of the input tensor
+        # --- Prediction with TFLite Interpreter ---
         interpreter.set_tensor(input_details[0]['index'], processed_img)
-        # Run the inference
         interpreter.invoke()
-        # Get the result
         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
 
         # Format results
@@ -82,9 +91,10 @@ def predict():
             "scores": {label: score * 100 for label, score in zip(CLASS_LABELS, predictions)}
         }
         
-        return render_template('result.html', filename=filename, result=result)
+        # MODIFIED: Pass the prediction to the single-page template
+        return render_template('index.html', filename=filename, prediction=result)
 
-    return "Something went wrong", 500
+    return redirect(url_for('index'))
 
 # --- Main Execution ---
 if __name__ == '__main__':

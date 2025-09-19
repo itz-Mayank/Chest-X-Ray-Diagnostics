@@ -1,19 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Upload X-Ray</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-g">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CXR-Diagnostics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        /* --- General Styles --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 2em;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* --- Main Container --- */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* --- Typography --- */
+        h1, h2 {
+            color: #1c2e4a;
+            text-align: center;
+        }
+        p { text-align: center; color: #555; }
+
+        /* --- Upload Box --- */
+        .upload-box {
+            text-align: center;
+            padding: 2em;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            margin-top: 2em;
+        }
+        input[type="file"] {
+            margin-bottom: 1em;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- Results Section --- */
+        .results-section {
+            display: flex;
+            gap: 2em;
+            margin-top: 2.5em;
+            align-items: flex-start;
+        }
+        .image-box, .details-box {
+            flex: 1; /* Both columns take equal space */
+        }
+        .image-box h2, .details-box h2 {
+            margin-top: 0;
+        }
+        .image-box img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        /* --- Prediction Display --- */
+        .prediction {
+            padding: 1.5em;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 1em;
+        }
+        .prediction h3 { margin: 0 0 0.5em 0; }
+        .prediction h4 { margin: 0; font-weight: 400; }
+
+        /* Color coding for results */
+        .prediction.covid { background-color: #f8d7da; color: #721c24; border-left: 5px solid #d9534f; }
+        .prediction.normal { background-color: #d4edda; color: #155724; border-left: 5px solid #5cb85c; }
+        .prediction.viralpneumonia { background-color: #fff3cd; color: #856404; border-left: 5px solid #f0ad4e; }
+
+        .scores p { text-align: left; margin: 0.5em 0; }
+
+        /* --- Responsive Design for Mobile --- */
+        @media (max-width: 768px) {
+            body { padding: 1em; }
+            .results-section { flex-direction: column; }
+            .container { padding: 1.5em; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Chest X-Ray Analysis</h1>
-        <p>Upload an image to predict COVID-19, Viral Pneumonia, or Normal.</p>
-        <form action="/predict" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required>
-            <br><br>
-            <input type="submit" value="Analyze Image">
-        </form>
+        <h1>🩺 Chest X-Ray Analysis</h1>
+        <p>Upload an image to get a prediction for COVID-19, Viral Pneumonia, or Normal.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 2em 0;">
+
+        <div class="upload-box">
+            <form action="/predict" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <br>
+                <input type="submit" value="Analyze Image">
+            </form>
+        </div>
+
+        {% if prediction and filename %}
+        <div class="results-section">
+            <div class="image-box">
+                <h2>Uploaded Image</h2>
+                <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded X-Ray">
+            </div>
+            <div class="details-box">
+                <h2>Analysis Result</h2>
+                <div class="prediction {{ prediction.label|lower|replace(' ', '') }}">
+                    <h3>Prediction: <strong>{{ prediction.label }}</strong></h3>
+                    <h4>Confidence: <strong>{{ prediction.confidence }}%</strong></h4>
+                </div>
+                <div class="scores">
+                    <h3>All Scores:</h3>
+                    {% for label, score in prediction.scores.items() %}
+                        <p>{{ label }}: {{ "%.2f"|format(score|float) }}%</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </body>
 </html>
