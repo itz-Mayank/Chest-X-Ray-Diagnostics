@@ -68,8 +68,10 @@ def predict():
 
         # --- Prediction with TFLite Interpreter --- # <-- CHANGE: New prediction logic
         # Set the value of the input tensor
+        input_type = input_details[0]['dtype']
+        processed_img = processed_img.astype(input_type)
+
         interpreter.set_tensor(input_details[0]['index'], processed_img)
-        # Run the inference
         interpreter.invoke()
         # Get the result
         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
