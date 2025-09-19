@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Prediction Result</h1>
+        <div class="content">
+            <div class="image-box">
+                <h2>Uploaded X-Ray</h2>
+                <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image">
+            </div>
+            <div class="result-box">
+                <h2>Analysis</h2>
+                <div class="prediction {{ result.label|lower|replace(' ', '') }}">
+                    <h3>Prediction: <strong>{{ result.label }}</strong></h3>
+                    <h4>Confidence: <strong>{{ result.confidence }}%</strong></h4>
+                </div>
+                <hr>
+                <h3>All Scores:</h3>
+                {% for label, score in result.scores.items() %}
+                    <p>{{ label }}: {{ "%.2f"|format(score|float) }}%</p>
+                {% endfor %}
+                <br>
+                <a href="/">Upload Another Image</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

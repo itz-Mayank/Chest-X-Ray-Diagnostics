@@ -1,0 +1,9 @@
+# Python cache files
+__pycache__/
+
+# The large dataset folder
+Covid19-dataset/
+
+# Virtual environment folders
+venv/
+.env
