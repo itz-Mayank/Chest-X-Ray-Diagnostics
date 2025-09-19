@@ -1,107 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-g">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CXR-Diagnostics</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-        /* --- General Styles --- */
+        :root { --primary-color: #007bff; --primary-hover: #0056b3; }
         body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 2em;
-            background-color: #f0f2f5;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            font-family: 'Poppins', sans-serif; margin: 0; padding: 2em;
+            background-color: #f0f2f5; color: #333; display: flex;
+            justify-content: center; align-items: flex-start; min-height: 100vh;
         }
-
-        /* --- Main Container --- */
         .container {
-            width: 100%;
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 2em;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%; max-width: 900px; margin: auto; background: white;
+            padding: 2em; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
-        /* --- Typography --- */
-        h1, h2 {
-            color: #1c2e4a;
-            text-align: center;
-        }
+        h1, h2 { color: #1c2e4a; text-align: center; }
         p { text-align: center; color: #555; }
-
-        /* --- Upload Box --- */
         .upload-box {
-            text-align: center;
-            padding: 2em;
-            border: 2px dashed #007bff;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            margin-top: 2em;
+            text-align: center; padding: 2em; border: 2px dashed var(--primary-color);
+            border-radius: 8px; background-color: #f8f9fa; margin-top: 2em;
         }
-        input[type="file"] {
-            margin-bottom: 1em;
-        }
+        input[type="file"] { margin-bottom: 1em; }
         input[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: background-color 0.3s;
+            background-color: var(--primary-color); color: white; padding: 12px 25px;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 1em;
+            font-weight: 600; transition: background-color 0.3s;
         }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
+        input[type="submit"]:hover { background-color: var(--primary-hover); }
 
         /* --- Results Section --- */
         .results-section {
-            display: flex;
-            gap: 2em;
-            margin-top: 2.5em;
-            align-items: flex-start;
+            display: none; /* Hidden by default */
+            gap: 2em; margin-top: 2.5em; align-items: flex-start;
         }
-        .image-box, .details-box {
-            flex: 1; /* Both columns take equal space */
-        }
-        .image-box h2, .details-box h2 {
-            margin-top: 0;
-        }
-        .image-box img {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        /* --- Prediction Display --- */
+        .image-box, .details-box { flex: 1; }
+        .image-box h2, .details-box h2 { margin-top: 0; }
+        .image-box img { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .prediction {
-            padding: 1.5em;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 1em;
+            padding: 1.5em; border-radius: 8px; text-align: center;
+            margin-bottom: 1em; border-left: 5px solid;
         }
         .prediction h3 { margin: 0 0 0.5em 0; }
         .prediction h4 { margin: 0; font-weight: 400; }
-
-        /* Color coding for results */
-        .prediction.covid { background-color: #f8d7da; color: #721c24; border-left: 5px solid #d9534f; }
-        .prediction.normal { background-color: #d4edda; color: #155724; border-left: 5px solid #5cb85c; }
-        .prediction.viralpneumonia { background-color: #fff3cd; color: #856404; border-left: 5px solid #f0ad4e; }
-
+        .prediction.covid { background-color: #f8d7da; color: #721c24; border-color: #d9534f; }
+        .prediction.normal { background-color: #d4edda; color: #155724; border-color: #5cb85c; }
+        .prediction.viralpneumonia { background-color: #fff3cd; color: #856404; border-color: #f0ad4e; }
         .scores p { text-align: left; margin: 0.5em 0; }
-
-        /* --- Responsive Design for Mobile --- */
+        .loader {
+            display: none; /* Hidden by default */
+            text-align: center; margin-top: 2em;
+        }
+        .loader div {
+            width: 40px; height: 40px; border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @media (max-width: 768px) {
             body { padding: 1em; }
             .results-section { flex-direction: column; }
@@ -111,40 +67,119 @@
 </head>
 <body>
     <div class="container">
-        <h1>🩺 Chest X-Ray Analysis</h1>
+        <h1>🫁 Chest X-Ray Analysis</h1>
         <p>Upload an image to get a prediction for COVID-19, Viral Pneumonia, or Normal.</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 2em 0;">
 
         <div class="upload-box">
-            <form action="/predict" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" required>
+            <form id="upload-form">
+                <input type="file" name="file" id="file-input" required>
                 <br>
                 <input type="submit" value="Analyze Image">
             </form>
         </div>
 
-        {% if prediction and filename %}
-        <div class="results-section">
+        <div class="loader" id="loader">
+            <div></div>
+            <p>Analyzing Image...</p>
+        </div>
+
+        <div class="results-section" id="results-section">
             <div class="image-box">
                 <h2>Uploaded Image</h2>
-                <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded X-Ray">
+                <img id="uploaded-image" src="#" alt="Uploaded X-Ray">
             </div>
             <div class="details-box">
                 <h2>Analysis Result</h2>
-                <div class="prediction {{ prediction.label|lower|replace(' ', '') }}">
-                    <h3>Prediction: <strong>{{ prediction.label }}</strong></h3>
-                    <h4>Confidence: <strong>{{ prediction.confidence }}%</strong></h4>
+                <div class="prediction" id="prediction-box">
+                    <h3>Prediction: <strong id="prediction-label"></strong></h3>
+                    <h4>Confidence: <strong id="prediction-confidence"></strong></h4>
                 </div>
                 <div class="scores">
                     <h3>All Scores:</h3>
-                    {% for label, score in prediction.scores.items() %}
-                        <p>{{ label }}: {{ "%.2f"|format(score|float) }}%</p>
-                    {% endfor %}
+                    <div id="all-scores"></div>
                 </div>
             </div>
         </div>
-        {% endif %}
 
     </div>
+
+    <script>
+        // --- JavaScript for Single-Page Interaction ---
+        const form = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const loader = document.getElementById('loader');
+        const resultsSection = document.getElementById('results-section');
+
+        form.addEventListener('submit', async (event) => {
+            // 1. Prevent the default form submission (which causes a page reload)
+            event.preventDefault();
+
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            // 2. Show the loader and hide previous results
+            loader.style.display = 'block';
+            resultsSection.style.display = 'none';
+
+            // 3. Create a FormData object to send the file
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                // 4. Send the image to the Flask API using the Fetch API
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // 5. Get the JSON prediction result from the backend
+                const result = await response.json();
+
+                // 6. Update the page with the results
+                updateResults(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while getting the prediction. Please check the console for details.');
+            } finally {
+                // 7. Hide the loader
+                loader.style.display = 'none';
+            }
+        });
+
+        function updateResults(result) {
+            // Update the uploaded image preview
+            const uploadedImage = document.getElementById('uploaded-image');
+            uploadedImage.src = URL.createObjectURL(fileInput.files[0]);
+
+            // Update the main prediction
+            const predictionBox = document.getElementById('prediction-box');
+            document.getElementById('prediction-label').textContent = result.label;
+            document.getElementById('prediction-confidence').textContent = `${result.confidence}%`;
+
+            // Update the color of the prediction box
+            predictionBox.className = 'prediction'; // Reset classes
+            predictionBox.classList.add(result.label.toLowerCase().replace(' ', ''));
+
+            // Update the list of all scores
+            const allScoresDiv = document.getElementById('all-scores');
+            allScoresDiv.innerHTML = ''; // Clear previous scores
+            for (const [label, score] of Object.entries(result.scores)) {
+                const p = document.createElement('p');
+                p.textContent = `${label}: ${parseFloat(score).toFixed(2)}%`;
+                allScoresDiv.appendChild(p);
+            }
+
+            // Finally, show the entire results section
+            resultsSection.style.display = 'flex';
+        }
+    </script>
 </body>
 </html>
