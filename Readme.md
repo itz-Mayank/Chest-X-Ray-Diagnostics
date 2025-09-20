@@ -1,5 +1,7 @@
 # 🩺 Chest X-Ray Disease Prediction (CXR-Diagnostics)
 
+#### Live: https://chest-x-ray-diagnostics.streamlit.app/
+
 ![Dashboard Image](Image/1.png)
 
 An end-to-end deep learning solution for classifying chest X-ray images into three categories: **COVID-19**, **Normal**, and **Viral Pneumonia**. This project features a fine-tuned ResNet50 model, optimized with TensorFlow Lite, and deployed as an interactive web application using Streamlit.
