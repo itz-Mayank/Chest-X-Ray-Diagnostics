@@ -1,77 +1,100 @@
-import os
-from flask import Flask, request, jsonify, render_template
+import streamlit as st
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.applications.resnet50 import preprocess_input as resnet_preprocess
 from PIL import Image
 import numpy as np
 
-# Initialize Flask app
-app = Flask(__name__)
+# Page configuration
+st.set_page_config(layout="wide", page_title="COVID-19 X-Ray Detection")
 
-# --- TFLite Model Loading ---
-TFLITE_MODEL_PATH = 'model.tflite'
-try:
-    interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
-    interpreter.allocate_tensors()
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    print("TFLite model loaded successfully.")
-except Exception as e:
-    print(f"Error loading TFLite model: {e}")
-    interpreter = None
+@st.cache_resource
+def load_tflite_model():
+    """Loads the TFLite model and allocates tensors."""
+    try:
+        interpreter = tf.lite.Interpreter(model_path='model.tflite')
+        interpreter.allocate_tensors()
+        return interpreter
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
+# Load the model when the app starts
+interpreter = load_tflite_model()
+
+# Class Labels
 CLASS_LABELS = ['COVID', 'Normal', 'Viral Pneumonia']
 
-# --- Helper Function ---
-def preprocess_image(image_stream):
-    """Preprocesses an image stream for the model."""
-    img = Image.open(image_stream).convert('RGB')
-    img = img.resize((224, 224))
-    img_array = tf.keras.utils.img_to_array(img)
+def preprocess_image(image):
+    """Preprocesses the uploaded image to match the model's input requirements."""
+    img = image.resize((224, 224))
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+    img_array = keras.utils.img_to_array(img)
     img_array_expanded = np.expand_dims(img_array, axis=0)
-    return tf.keras.applications.resnet50.preprocess_input(img_array_expanded)
+    return resnet_preprocess(img_array_expanded)
 
-# --- Flask Routes ---
-@app.route('/')
-def index():
-    """Serves the main HTML page."""
-    return render_template('index.html')
+# Web App Interface
+st.title("COVID-19 Detection from Chest X-Rays")
+st.write(
+    "Upload a chest X-ray image, and the application will predict if it indicates"
+    " COVID-19, Viral Pneumonia, or is Normal."
+)
+st.divider()
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Handles image prediction and returns JSON."""
-    if interpreter is None:
-        return jsonify({"error": "Model not loaded"}), 500
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+col1, col2 = st.columns(2)
 
-    try:
-        processed_img = preprocess_image(file.stream)
+with col1:
+    uploaded_file = st.file_uploader(
+        "Choose an X-ray image...", type=["jpg", "jpeg", "png"]
+    )
 
-        # Ensure input data type matches model's expectation
-        input_type = input_details[0]['dtype']
-        processed_img = processed_img.astype(input_type)
+if uploaded_file is not None and interpreter is not None:
+    # Open and display the uploaded image in the first column
+    image = Image.open(uploaded_file)
+    with col1:
+        st.image(image, caption='Uploaded X-ray', use_column_width=True)
 
-        # Run inference
-        interpreter.set_tensor(input_details[0]['index'], processed_img)
-        interpreter.invoke()
-        predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+    # Process and predict
+    processed_img = preprocess_image(image)
 
-        # Format results
-        predicted_index = np.argmax(predictions)
-        result = {
-            "label": CLASS_LABELS[predicted_index],
-            "confidence": f"{np.max(predictions) * 100:.2f}",
-            "scores": {label: score * 100 for label, score in zip(CLASS_LABELS, predictions)}
-        }
-        return jsonify(result)
+    # Prediction logic for TFLite Interpreter
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    processed_img = processed_img.astype(input_details[0]['dtype'])
+    interpreter.set_tensor(input_details[0]['index'], processed_img)
+    interpreter.invoke()
+    predictions = interpreter.get_tensor(output_details[0]['index'])
+
+    # Get the top prediction details
+    predicted_index = np.argmax(predictions[0])
+    predicted_label = CLASS_LABELS[predicted_index]
+    confidence = np.max(predictions[0]) * 100
+
+    # Display the prediction result in the second column
+    with col2:
+        st.header("Prediction Result")
+        if predicted_label == 'COVID':
+            st.error(f"Predicted Class: **{predicted_label}**", icon="🦠")
+        elif predicted_label == 'Normal':
+            st.success(f"Predicted Class: **{predicted_label}**", icon="😇")
+        else: # Viral Pneumonia
+            st.warning(f"Predicted Class: **{predicted_label}**", icon="🫁")
         
-    except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        # Display confidence scores for all classes
+        st.subheader("Confidence Scores:")
+        for i, label in enumerate(CLASS_LABELS):
+            st.text(f"{label}: {predictions[0][i]*100:.2f}%")
+            
+        st.subheader("Confidence Scores:")
+        st.bar_chart(data={label: pred for label, pred in zip(CLASS_LABELS, predictions[0])})
 
-# --- Main Execution ---
-if __name__ == '__main__':
-    app.run(debug=True)
+        # st.header("Prediction Result")
+        # st.info(f"Predicted Class: **{predicted_label}**")
+        # st.write(f"Confidence: **{confidence:.2f}%**")
+        # st.divider()
+
+
+# Display a warning if the model file isn't found
+if interpreter is None:
+    st.warning("Model file 'model.tflite' not found. Please place it in the same folder as this app.")
