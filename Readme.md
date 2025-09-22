@@ -14,14 +14,6 @@ The timely and accurate diagnosis of respiratory diseases like COVID-19 and Vira
 
 ---
 
-## Live Demo Preview
-
-Here is a preview of the final Streamlit web application in action.
-
-*[A GIF or screenshot showing the web application: user uploading an X-ray and receiving a prediction result]*
-
----
-
 ## Features
 
 -   **Multi-Class Classification:** Accurately distinguishes between COVID-19, Normal, and Viral Pneumonia.
