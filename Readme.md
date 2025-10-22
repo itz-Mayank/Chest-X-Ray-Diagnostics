@@ -54,10 +54,10 @@ The model's performance was evaluated on a held-out test set, demonstrating high
 
 | Class             | Precision | Recall | F1-Score |
 | ----------------- | --------- | ------ | -------- |
-| **COVID** | 1.00     | 0.80   | 0.89     |
-| **Normal** | 0.70      | 0.95   | 0.80     |
-| **Viral Pneumonia** | 0.94      | 0.85   | 0.89     |
-| **Overall Accuracy**|           |        | **86.3%**|
+| **COVID** | 1.00     | 0.97   | 0.98     |
+| **Normal** | 0.98      | 0.95   | 0.97     |
+| **Viral Pneumonia** | 0.99      | 0.98   | 0.98     |
+| **Overall Accuracy**|           |        | **96.7%**|
 
 ---
 
