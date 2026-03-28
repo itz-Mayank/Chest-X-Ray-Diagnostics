@@ -7,7 +7,7 @@
 An end-to-end deep learning solution for classifying chest X-ray images into three categories: **COVID-19**, **Normal**, and **Viral Pneumonia**. This project features a fine-tuned ResNet50 model, optimized with TensorFlow Lite, and deployed as an interactive web application using Streamlit.
 
 --- 
-
+ 
 ## Problem Statement
 
 The timely and accurate diagnosis of respiratory diseases like COVID-19 and Viral Pneumonia is crucial for patient treatment and controlling public health crises. Manual analysis of chest X-rays can be time-consuming and requires expert radiologists. This project aims to address this challenge by developing an automated tool that uses deep learning to provide a fast, accurate, and accessible preliminary diagnosis from chest X-ray images, assisting healthcare professionals in the screening process.
